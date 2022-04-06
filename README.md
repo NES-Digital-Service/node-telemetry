@@ -105,16 +105,31 @@ For more details on creating custom metrics see [prom-client](https://github.com
 ### Injecting A Logger
 
 You can capture the log output from the telemetry server by passing in a logger object in the constructor.
-This way you can route its log messages through your favourite log library.
+The expected logger object is compatible with popular logging libraries like [winston](https://github.com/winstonjs/winston).
+
+For example to output logging in JSON format, the code below...
 
 ```js
-const logger = {
-  info: function(message) {
-    // TODO output the message at level 'info'
-  }
-}
+const winston = require('winston')
+
+const logger = winston.createLogger({
+  transports: [
+    new winston.transports.Console({
+      level: 'info',
+      format: winston.format.json()
+    })
+  ]
+})
 const TELEMETRY_PORT = 9090
 const telemetry = new TelemetryServer(logger).start(TELEMETRY_PORT)
+```
+
+... produces the following output on startup
+
+```shell
+{"level":"info","message":"Service telemetry starting..."}
+{"level":"info","message":"Service telemetry is up on 9090"}
+
 ```
 
 ## For Maintainers
