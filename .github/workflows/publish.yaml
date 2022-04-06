@@ -1,0 +1,42 @@
+name: publish
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-npm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set @nes-digital-service registry
+        run: npm config set @nes-digital-service:registry https://npm.pkg.github.com
+
+      - name: Set @nes-digital-service read token
+        run: echo "//npm.pkg.github.com/:_authToken=${{ secrets.PACKAGES_TOKEN }}" >> .npmrc
+
+      - run: npm install
+
+        # Automatically set version from release
+      - name: Set release version
+        run: jq '.version = "${{ github.event.release.tag_name }}"' package.json > package.v.json ; mv package.v.json package.json
+
+      - name: Set @nes-digital-service publish token
+        run: echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
+
+      - run: npm publish
+
+        # Update documentation
+      - name: Generate JSDocs
+        uses: andstor/jsdoc-action@v1
+        with:
+          source_dir: ./lib
+          output_dir: ./out
+
+      - name: Deploy Docs
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./out
+          publish_branch: github_pages

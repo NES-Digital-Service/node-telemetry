@@ -1,0 +1,16 @@
+root = true
+
+[**]
+indent_style = space
+indent_size = 2
+binary_next_line = true
+max_line_length = 160
+
+[Dockerfile]
+indent_size = 4
+
+[*.yaml]
+quote_type = single
+
+[*.json]
+max_line_length = 500
