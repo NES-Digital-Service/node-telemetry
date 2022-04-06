@@ -2,12 +2,10 @@ const TelemetryServer = require('./TelemetryServer')
 const request = require('supertest')
 const { Counter } = require('prom-client')
 
-jest.mock('./logger')
-const mockLogger = require('./logger')
-
 jest.mock('express')
 const mockExpress = require('express')
 const realExpress = jest.requireActual('express')
+const mockLogger = { info: jest.fn() }
 
 describe('TelemetryServer', () => {
   let telemetryServer
@@ -96,7 +94,7 @@ describe('TelemetryServer', () => {
 
     beforeEach(() => {
       mockExpress.mockReturnValue(mockApp)
-      telemetryServer = new TelemetryServer()
+      telemetryServer = new TelemetryServer(mockLogger)
     })
 
     afterEach(() => {

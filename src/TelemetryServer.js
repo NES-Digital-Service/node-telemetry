@@ -1,9 +1,9 @@
 const express = require('express')
-const logger = require('./logger')
 const client = require('prom-client')
 
 class TelemetryServer {
-  constructor () {
+  constructor (logger = { info: console.log }) {
+    this._logger = logger
     this._live = true
     this._ready = false
     this._app = express()
@@ -37,9 +37,9 @@ class TelemetryServer {
       throw new Error('Service telemetry already started')
     }
 
-    logger.info('Service telemetry starting...')
+    this._logger.info('Service telemetry starting...')
     this._server = this.getApp().listen(telemetryPort, () => {
-      logger.info(`Service telemetry is up on ${telemetryPort}`)
+      this._logger.info(`Service telemetry is up on ${telemetryPort}`)
     })
     return this
   }
@@ -49,9 +49,9 @@ class TelemetryServer {
       throw new Error('Service telemetry not started')
     }
 
-    logger.info('Service telemetry stopping...')
+    this._logger.info('Service telemetry stopping...')
     this._server.close(() => {
-      logger.info('Service telemetry is stopped')
+      this._logger.info('Service telemetry is stopped')
     })
   }
 

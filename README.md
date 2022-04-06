@@ -102,11 +102,26 @@ myCounter.inc()
 
 For more details on creating custom metrics see [prom-client](https://github.com/siimon/prom-client).
 
+### Injecting A Logger
+
+You can capture the log output from the telemetry server by passing in a logger object in the constructor.
+This way you can route its log messages through your favourite log library.
+
+```js
+const logger = {
+  info: function(message) {
+    // TODO output the message at level 'info'
+  }
+}
+const TELEMETRY_PORT = 9090
+const telemetry = new TelemetryServer(logger).start(TELEMETRY_PORT)
+```
+
 ## For Maintainers
 
 ### Testing
 
-This library comes with a suite of unit tests.  To execute the unit tests:
+This library comes with a suite of unit tests. To execute the unit tests:
 
 ```shell
 npm test
