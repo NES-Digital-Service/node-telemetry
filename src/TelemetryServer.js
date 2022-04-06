@@ -7,6 +7,7 @@ class TelemetryServer {
     this._live = true
     this._ready = false
     this._app = express()
+    this._app.disable('x-powered-by')
     this._app.get('/liveness', (req, res) => res.status(this._mapToStatusCode(this._live)).end())
     this._app.get('/readiness', (req, res) => res.status(this._mapToStatusCode(this._ready)).end())
     this._app.get('/metrics', async (req, res) => {

@@ -86,6 +86,7 @@ describe('TelemetryServer', () => {
 
     const mockApp = {
       get: jest.fn(),
+      disable: jest.fn(),
       listen: jest.fn().mockImplementation((port, fn) => {
         fn() // call the given callback to simulate server ready
         return mockServer
