@@ -1,6 +1,12 @@
 const express = require('express')
 const client = require('prom-client')
 
+/**
+ * Creates a new telemetry server.
+ * Telemetry endpoints are not available until {@linkcode TelemetryServer#start} is called.
+ * @param {Object} [logger] - Optional logger to use in place of the default console logger.
+ * The object should have a key 'info' which is a function that takes a single parameter containing the log message.
+ */
 class TelemetryServer {
   constructor (logger = { info: console.log }) {
     this._logger = logger
