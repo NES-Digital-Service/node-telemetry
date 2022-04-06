@@ -8,7 +8,7 @@ jobs:
   build-npm:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Set @nes-digital-service registry
         run: npm config set @nes-digital-service:registry https://npm.pkg.github.com
