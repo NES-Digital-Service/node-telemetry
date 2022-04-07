@@ -17,6 +17,10 @@ npm install --save @nes-digital-service/node-telemetry
 
 ## Usage
 
+### API Documentation
+
+API documentation for this library can be found [at our GitHub Pages site](https://nes-digital-service.github.io/node-telemetry).
+
 ### Kubernetes Lifecycle Probes
 
 In the startup code for your Node.js application add the following code
