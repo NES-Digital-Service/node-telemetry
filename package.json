@@ -1,6 +1,6 @@
 {
-  "repository": "github:NES-Digital-Service/node-telemetry",
-  "name": "node-telemetry",
+  "repository": "NES-Digital-Service/node-telemetry",
+  "name": "@nes-digital-service/node-telemetry",
   "description": "Provides standard Kubernetes probes and Prometheus metrics endpoint for Node.js apps.",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/"
