@@ -31,7 +31,7 @@ jobs:
       - name: Generate JSDocs
         uses: andstor/jsdoc-action@v1
         with:
-          source_dir: ./lib
+          source_dir: ./src
           output_dir: ./out
 
       - name: Deploy Docs
