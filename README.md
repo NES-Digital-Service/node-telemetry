@@ -6,8 +6,12 @@ Provides standard Kubernetes probes and Prometheus metrics endpoint for Node.js 
 Configure npm with the NES Digital Service GitHub packages repository:
 
 ```shell
-echo "@nes-digital-service:registry=https://npm.pkg.github.com" >> .npmrc
+echo "@nes-digital-service:registry=https://npm.pkg.github.com" > .npmrc
+echo "//npm.pkg.github.com/:_authToken=<PERSONAL ACCESS TOKEN>" >> .npmrc
 ```
+
+If you do not have a GitHub personal access token then generate one from your [GitHub Developer Settings](https://github.com/settings/tokens).
+To install this package the personal access token must have the `read:packages` scope.
 
 Install the module with npm:
 
