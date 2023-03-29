@@ -9,8 +9,8 @@
   "types": "dist/index.d.ts",
   "files": [
     "dist/**/*.js",
-    "!dist/**/**.test.**",
-    "index.js"
+    "dist/**/*.d.ts",
+    "!dist/**/**.test.**"
   ],
   "scripts": {
     "test": "jest --coverage",
