@@ -1,5 +1,10 @@
-const express = require('express')
-const client = require('prom-client')
+import express, { Application, Request, Response } from 'express'
+import { Server } from 'node:http'
+import { register } from 'prom-client'
+
+interface Logger {
+  info: (arg0: string) => void
+}
 
 /**
  * Creates a new telemetry server.
@@ -7,18 +12,31 @@ const client = require('prom-client')
  * @param {Object} [logger] - Optional logger to use in place of the default console logger.
  * The object should have a key 'info' which is a function that takes a single parameter containing the log message.
  */
-class TelemetryServer {
-  constructor (logger = { info: console.log }) {
+export default class TelemetryServer {
+  private _live: boolean
+  private _ready: boolean
+  private readonly _logger: Logger
+  private readonly _app: Application
+  private _server: Server | null
+
+  constructor (logger: Logger = { info: console.log }) {
+    this._server = null
     this._logger = logger
     this._live = true
     this._ready = false
     this._app = express()
     this._app.disable('x-powered-by')
-    this._app.get('/liveness', (req, res) => res.status(this._mapToStatusCode(this._live)).end())
-    this._app.get('/readiness', (req, res) => res.status(this._mapToStatusCode(this._ready)).end())
-    this._app.get('/metrics', async (req, res) => {
-      res.set('Content-Type', client.register.contentType)
-      res.end(await client.register.metrics())
+    this._app.get('/liveness', (_req: Request, res: Response) => res.status(this._mapToStatusCode(this._live)).end())
+    this._app.get('/readiness', (_req: Request, res: Response) => res.status(this._mapToStatusCode(this._ready)).end())
+    this._app.get('/metrics', (_req: Request, res: Response) => {
+      void (async (): Promise<void> => {
+        res.set('Content-Type', register.contentType)
+        try {
+          res.end(await register.metrics())
+        } catch {
+          res.status(500).end()
+        }
+      })()
     })
   }
 
@@ -30,7 +48,7 @@ class TelemetryServer {
    * Tip: Call this as the last step of your application startup code, or if unavailable service dependencies
    * become available again.
    */
-  signalReady () {
+  signalReady (): void {
     this._ready = true
   }
 
@@ -43,7 +61,7 @@ class TelemetryServer {
    * Tip: Call this as the first step of your application shutdown code, or if your service dependencies
    * become unavailable.
    */
-  signalNotReady () {
+  signalNotReady (): void {
     this._ready = false
   }
 
@@ -55,7 +73,7 @@ class TelemetryServer {
    * Metrics will still be available until termination.
    * Tip: Call this just before {@linkcode TelemetryServer#stop}
    */
-  signalStopped () {
+  signalStopped (): void {
     this._live = false
     this._ready = false
   }
@@ -64,7 +82,7 @@ class TelemetryServer {
    * Returns the underlying {@link https://github.com/expressjs/express|Express} object used by the telemetry server.
    * @returns {Express}
    */
-  getApp () {
+  getApp (): Application {
     return this._app
   }
 
@@ -76,8 +94,8 @@ class TelemetryServer {
    * @param {Number} telemetryPort the network port the probes should be available on.
    * @returns {TelemetryServer} Returns 'this' for convenience in calling other methods.
    */
-  start (telemetryPort) {
-    if (this._server) {
+  start (telemetryPort: number): TelemetryServer {
+    if (this._server !== null) {
       throw new Error('Service telemetry already started')
     }
 
@@ -92,8 +110,8 @@ class TelemetryServer {
    * Withdraws the telemetry probes.
    * Tip: Call this as the last step in the shutdown code of your application.
    */
-  stop () {
-    if (!this._server) {
+  stop (): void {
+    if (this._server === null) {
       throw new Error('Service telemetry not started')
     }
 
@@ -103,9 +121,7 @@ class TelemetryServer {
     })
   }
 
-  _mapToStatusCode (state) {
+  private _mapToStatusCode (state: boolean): number {
     return state ? 200 : 500
   }
 }
-
-module.exports = TelemetryServer

@@ -1,18 +1,20 @@
-const TelemetryServer = require('./TelemetryServer')
-const request = require('supertest')
-const { Counter } = require('prom-client')
+import TelemetryServer from './TelemetryServer'
+import request from 'supertest'
+import { register } from 'prom-client'
+import express from 'express'
 
+jest.mock('prom-client')
 jest.mock('express')
-const mockExpress = require('express')
 const realExpress = jest.requireActual('express')
+register.contentType = 'text/plain'
 const mockLogger = { info: jest.fn() }
 
 describe('TelemetryServer', () => {
-  let telemetryServer
+  let telemetryServer: TelemetryServer
 
   describe('health probes', () => {
     beforeEach(() => {
-      mockExpress.mockImplementation(realExpress) // use real express for these tests
+      (express as unknown as jest.Mock).mockImplementation(realExpress) // use real express for these tests
       telemetryServer = new TelemetryServer()
     })
 
@@ -52,23 +54,25 @@ describe('TelemetryServer', () => {
 
   describe('metrics', () => {
     beforeEach(() => {
-      mockExpress.mockImplementation(realExpress)
+      (express as unknown as jest.Mock).mockImplementation(realExpress)
       telemetryServer = new TelemetryServer()
     })
 
     it('should return metrics in openmetrics format', async () => {
-      /* eslint-disable no-new */
-      new Counter({
-        name: 'example_name',
-        help: 'example health',
-        labelNames: ['example_label']
-      })
+      (register.metrics as jest.Mock).mockResolvedValue('# HELP\n# TYPE')
 
       const response = await request(telemetryServer.getApp()).get('/metrics')
       expect(response.status).toEqual(200)
       expect(response.headers['content-type']).toMatch(/text\/plain/)
       expect(response.text).toContain('# HELP')
       expect(response.text).toContain('# TYPE')
+    })
+
+    it('should return 500 when metrics failed to register', async () => {
+      (register.metrics as jest.Mock).mockRejectedValue(new Error('foo'))
+      const response = await request(telemetryServer.getApp()).get('/metrics')
+      expect(response.status).toEqual(500)
+      expect(response.headers['content-type']).toMatch(/text\/plain/)
     })
   })
 
@@ -85,16 +89,17 @@ describe('TelemetryServer', () => {
     }
 
     const mockApp = {
+      ...realExpress(),
       get: jest.fn(),
       disable: jest.fn(),
-      listen: jest.fn().mockImplementation((port, fn) => {
+      listen: jest.fn().mockImplementation((_port, fn) => {
         fn() // call the given callback to simulate server ready
         return mockServer
       })
     }
 
     beforeEach(() => {
-      mockExpress.mockReturnValue(mockApp)
+      (express as unknown as jest.Mock).mockReturnValue(mockApp)
       telemetryServer = new TelemetryServer(mockLogger)
     })
 
@@ -108,12 +113,12 @@ describe('TelemetryServer', () => {
         telemetryServer.start(fakePort)
 
         // Then
-        expect(mockExpress).toBeCalled()
+        expect(express).toBeCalled()
         expect(mockApp.listen).toBeCalled()
         expect(mockApp.listen).toHaveBeenCalledWith(fakePort, expect.any(Function))
         expect(mockLogger.info.mock.calls.length).toBe(2)
         expect(mockLogger.info.mock.calls[0][0]).toBe('Service telemetry starting...')
-        expect(mockLogger.info.mock.calls[1][0]).toBe('Service telemetry is up on ' + fakePort)
+        expect(mockLogger.info.mock.calls[1][0]).toBe(`Service telemetry is up on ${fakePort}`)
       })
 
       it('should throw error if already started', () => {
@@ -137,7 +142,7 @@ describe('TelemetryServer', () => {
         expect(mockServer.close).toBeCalled()
         expect(mockLogger.info).toHaveBeenCalledTimes(4)
         expect(mockLogger.info.mock.calls[0][0]).toBe('Service telemetry starting...')
-        expect(mockLogger.info.mock.calls[1][0]).toBe('Service telemetry is up on ' + fakePort)
+        expect(mockLogger.info.mock.calls[1][0]).toBe(`Service telemetry is up on ${fakePort}`)
         expect(mockLogger.info.mock.calls[2][0]).toBe('Service telemetry stopping...')
         expect(mockLogger.info.mock.calls[3][0]).toBe('Service telemetry is stopped')
       })
