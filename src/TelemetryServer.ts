@@ -13,31 +13,22 @@ interface Logger {
  * The object should have a key 'info' which is a function that takes a single parameter containing the log message.
  */
 export default class TelemetryServer {
-  private _live: boolean
-  private _ready: boolean
-  private readonly _logger: Logger
-  private readonly _app: Application
-  private _server: Server | null
+  #live: boolean
+  #ready: boolean
+  readonly #logger: Logger
+  readonly #app: Application
+  #server: Server | null
 
   constructor (logger: Logger = { info: console.log }) {
-    this._server = null
-    this._logger = logger
-    this._live = true
-    this._ready = false
-    this._app = express()
-    this._app.disable('x-powered-by')
-    this._app.get('/liveness', (_req: Request, res: Response) => res.status(this._mapToStatusCode(this._live)).end())
-    this._app.get('/readiness', (_req: Request, res: Response) => res.status(this._mapToStatusCode(this._ready)).end())
-    this._app.get('/metrics', (_req: Request, res: Response) => {
-      void (async (): Promise<void> => {
-        res.set('Content-Type', register.contentType)
-        try {
-          res.end(await register.metrics())
-        } catch {
-          res.status(500).end()
-        }
-      })()
-    })
+    this.#server = null
+    this.#logger = logger
+    this.#live = true
+    this.#ready = false
+    this.#app = express()
+    this.#app.disable('x-powered-by')
+    this.#app.get('/liveness', this.#livenessProbe.bind(this))
+    this.#app.get('/readiness', this.#readinessProbe.bind(this))
+    this.#app.get('/metrics', this.#metricsProbe.bind(this))
   }
 
   /**
@@ -49,7 +40,7 @@ export default class TelemetryServer {
    * become available again.
    */
   signalReady (): void {
-    this._ready = true
+    this.#ready = true
   }
 
   /**
@@ -62,7 +53,7 @@ export default class TelemetryServer {
    * become unavailable.
    */
   signalNotReady (): void {
-    this._ready = false
+    this.#ready = false
   }
 
   /**
@@ -74,8 +65,8 @@ export default class TelemetryServer {
    * Tip: Call this just before {@linkcode TelemetryServer#stop}
    */
   signalStopped (): void {
-    this._live = false
-    this._ready = false
+    this.#live = false
+    this.#ready = false
   }
 
   /**
@@ -83,7 +74,7 @@ export default class TelemetryServer {
    * @returns {Express}
    */
   getApp (): Application {
-    return this._app
+    return this.#app
   }
 
   /**
@@ -95,13 +86,13 @@ export default class TelemetryServer {
    * @returns {TelemetryServer} Returns 'this' for convenience in calling other methods.
    */
   start (telemetryPort: number): TelemetryServer {
-    if (this._server !== null) {
+    if (this.#server !== null) {
       throw new Error('Service telemetry already started')
     }
 
-    this._logger.info('Service telemetry starting...')
-    this._server = this.getApp().listen(telemetryPort, () => {
-      this._logger.info(`Service telemetry is up on ${telemetryPort}`)
+    this.#logger.info('Service telemetry starting...')
+    this.#server = this.getApp().listen(telemetryPort, () => {
+      this.#logger.info(`Service telemetry is up on ${telemetryPort}`)
     })
     return this
   }
@@ -111,17 +102,36 @@ export default class TelemetryServer {
    * Tip: Call this as the last step in the shutdown code of your application.
    */
   stop (): void {
-    if (this._server === null) {
+    if (this.#server === null) {
       throw new Error('Service telemetry not started')
     }
 
-    this._logger.info('Service telemetry stopping...')
-    this._server.close(() => {
-      this._logger.info('Service telemetry is stopped')
+    this.#logger.info('Service telemetry stopping...')
+    this.#server.close(() => {
+      this.#logger.info('Service telemetry is stopped')
     })
   }
 
-  private _mapToStatusCode (state: boolean): number {
+  #livenessProbe (_req: Request, res: Response): Response {
+    return res.status(this.#mapToStatusCode(this.#live)).end()
+  }
+
+  #readinessProbe (_req: Request, res: Response): Response {
+    return res.status(this.#mapToStatusCode(this.#ready)).end()
+  }
+
+  #metricsProbe (_req: Request, res: Response): void {
+    void (async (): Promise<void> => {
+      res.set('Content-Type', register.contentType)
+      try {
+        res.end(await register.metrics())
+      } catch {
+        res.status(500).end()
+      }
+    })()
+  }
+
+  #mapToStatusCode (state: boolean): number {
     return state ? 200 : 500
   }
 }
