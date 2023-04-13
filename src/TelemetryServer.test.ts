@@ -14,7 +14,7 @@ describe('TelemetryServer', () => {
 
   describe('health probes', () => {
     beforeEach(() => {
-      (express as unknown as jest.Mock).mockImplementation(realExpress) // use real express for these tests
+      jest.mocked(express).mockImplementation(realExpress) // use real express for these tests
       telemetryServer = new TelemetryServer()
     })
 
@@ -54,12 +54,12 @@ describe('TelemetryServer', () => {
 
   describe('metrics', () => {
     beforeEach(() => {
-      (express as unknown as jest.Mock).mockImplementation(realExpress)
+      jest.mocked(express).mockImplementation(realExpress) // use real express for these tests
       telemetryServer = new TelemetryServer()
     })
 
     it('should return metrics in openmetrics format', async () => {
-      (register.metrics as jest.Mock).mockResolvedValue('# HELP\n# TYPE')
+      jest.mocked(register.metrics).mockResolvedValue('# HELP\n# TYPE')
 
       const response = await request(telemetryServer.getApp()).get('/metrics')
       expect(response.status).toEqual(200)
@@ -69,7 +69,7 @@ describe('TelemetryServer', () => {
     })
 
     it('should return 500 when metrics failed to register', async () => {
-      (register.metrics as jest.Mock).mockRejectedValue(new Error('foo'))
+      jest.mocked(register.metrics).mockRejectedValue(new Error('foo'))
       const response = await request(telemetryServer.getApp()).get('/metrics')
       expect(response.status).toEqual(500)
       expect(response.headers['content-type']).toMatch(/text\/plain/)
@@ -99,12 +99,9 @@ describe('TelemetryServer', () => {
     }
 
     beforeEach(() => {
-      (express as unknown as jest.Mock).mockReturnValue(mockApp)
-      telemetryServer = new TelemetryServer(mockLogger)
-    })
-
-    afterEach(() => {
       jest.clearAllMocks()
+      jest.mocked(express).mockReturnValue(mockApp)
+      telemetryServer = new TelemetryServer(mockLogger)
     })
 
     describe('start', () => {
