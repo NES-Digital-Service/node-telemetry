@@ -18,7 +18,7 @@
     "prepublish": "npm run build"
   },
   "dependencies": {
-    "express": "^4.19.2",
+    "express": "^4.21.0",
     "prom-client": "^14.0.0"
   },
   "devDependencies": {
